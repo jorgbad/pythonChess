@@ -60,32 +60,51 @@ def main():
                 x = (event.pos[0]-INICIO_TABLERO)//LADO_CASILLA
                 y = (event.pos[1]-INICIO_TABLERO)//LADO_CASILLA
                 sel = (x, y)
-                if (event.pos[0] in range(INICIO_TABLERO, FIN_TABLERO) and event.pos[1] in range(INICIO_TABLERO, FIN_TABLERO)):
-                    print(f"boton pulsado en casilla {sel}")
-                    rect_x = INICIO_TABLERO + LADO_CASILLA*((event.pos[0]-INICIO_TABLERO)//LADO_CASILLA) # calculo la x del origen de la casilla en la que está el ratón  
-                    rect_y = INICIO_TABLERO + LADO_CASILLA*((event.pos[1]-INICIO_TABLERO)//LADO_CASILLA) # calculo la y del origen de la casilla en la que está el ratón  
-                    figura_mov = situacion[sel[0] + 8 * sel[1]]
-                    situacion.modificar(Nada(), sel[0], sel[1])
-                    situacion.pintar(ventana)
-                    pygame.draw.rect(ventana, FONDO, (rect_x, rect_y , LADO_CASILLA , LADO_CASILLA), BORDE) # rectangular (height, width), (30, 30)
-                    pygame.display.flip()
+                if situacion[sel[0] + 8 * sel[1]].getTipo() != Nada:
+                    if (event.pos[0] in range(INICIO_TABLERO, FIN_TABLERO) and event.pos[1] in range(INICIO_TABLERO, FIN_TABLERO)):
+                        rect_x = INICIO_TABLERO + LADO_CASILLA*((event.pos[0]-INICIO_TABLERO)//LADO_CASILLA) # calculo la x del origen de la casilla en la que está el ratón  
+                        rect_y = INICIO_TABLERO + LADO_CASILLA*((event.pos[1]-INICIO_TABLERO)//LADO_CASILLA) # calculo la y del origen de la casilla en la que está el ratón  
+                        figura_mov = situacion[sel[0] + 8 * sel[1]]
+                        situacion.modificar(Nada(), sel[0], sel[1])
+                        situacion.pintar(ventana)
+                        pygame.draw.rect(ventana, FONDO, (rect_x, rect_y , LADO_CASILLA , LADO_CASILLA), BORDE) # rectangular (height, width), (30, 30)
+                        pygame.display.flip()
+                    else:
+                        print ("Pulsacion fuera del tablero")
                 else:
-                    print ("Pulsacion fuera del tablero")
+                    print ("No hay pieza en la casilla")
+                    sel = (-1,-1)
 
             if event.type == pygame.MOUSEBUTTONUP:
-                x = (event.pos[0]-INICIO_TABLERO)//LADO_CASILLA
-                y = (event.pos[1]-INICIO_TABLERO)//LADO_CASILLA
-                des = (x, y)
-                if (event.pos[0] in range(INICIO_TABLERO, FIN_TABLERO) and event.pos[1] in range(INICIO_TABLERO, FIN_TABLERO)):
-                    print(f"Movimiento desde {sel} hasta {des}")
-                    if ( figura_mov.getTipo() != Nada ):
-                        situacion.modificar(figura_mov, des[0], des[1])   
+                if sel != (-1,-1) :
+                    x = (event.pos[0]-INICIO_TABLERO)//LADO_CASILLA
+                    y = (event.pos[1]-INICIO_TABLERO)//LADO_CASILLA
+                    des = (x, y)
+                    if ( event.pos[0] in range(INICIO_TABLERO, FIN_TABLERO) and event.pos[1] in range(INICIO_TABLERO, FIN_TABLERO)): 
+                        resul_mov = figura_mov.chk_mov(situacion, des[0], des[1]) 
+                        if resul_mov == 1 :     
+                            print("en destino no hay pieza")      
+                            situacion.modificar(figura_mov, des[0], des[1]) 
+                        elif resul_mov == 2 :
+                            print ("en destino hay figura del mismo color")
+                            situacion.modificar(figura_mov, sel[0], sel[1])
+                        elif resul_mov == 3 :
+                            print ("en destino hay pieza de color contrario")
+                            situacion.modificar(figura_mov, des[0], des[1]) 
+                        elif resul_mov == 4 :
+                            print ("Pieza encontrada en el camino, movimiento no valido")
+                            situacion.modificar(figura_mov, sel[0], sel[1])
+                        elif resul_mov == 9 :
+                            print ("Movimiento ilegal para esa pieza")
+                            situacion.modificar(figura_mov, sel[0], sel[1])
+                    else :
+                        print ("Soltado fuera del tablero!")
+                        situacion.modificar(figura_mov, sel[0], sel[1])
+                    figura_mov = Nada()
+                    situacion.pintar(ventana) 
+                    pygame.display.flip()
                 else :
-                    print ("Soltado fuera del tablero")
-                    situacion.modificar(figura_mov, sel[0], sel[1])
-                figura_mov = Nada()
-                situacion.pintar(ventana) 
-                pygame.display.flip()
+                    print ("No se había cogido pieza")
 
             if event.type == pygame.MOUSEMOTION:
                 x = (event.pos[0] - LADO_CASILLA / 2)
@@ -94,7 +113,7 @@ def main():
                 if ( figura_mov.getTipo() != Nada ):
                     situacion.pintar(ventana)
                     ventana.blit(figura_mov.imagen, pos)
-                    pygame.draw.rect(ventana, FONDO, (pos[0], pos[1], LADO_CASILLA, LADO_CASILLA), BORDE) # rectangular (height, width), (30, 30)
+                    pygame.draw.rect(ventana, FONDO, (pos[0], pos[1], LADO_CASILLA, LADO_CASILLA), BORDE) 
                     pygame.display.flip()              
         pygame.display.flip()
         pygame.time.Clock().tick(FPS)
