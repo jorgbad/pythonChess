@@ -1,4 +1,5 @@
 import pygame
+import random
 from pygame.locals import *
 
 
@@ -8,6 +9,7 @@ INICIO_TABLERO = 20 # Inicio del tablero con respecto a la ventana
 FIN_TABLERO = 580 # Fin del tablero con respecto a la ventana
 LADO_CASILLA = 70 # Tamaño del lado de cada casilla
 BORDE = 3 # Tamaño del borde de la casilla seleccionada
+PASO_ATPC = 5
 FONDO = (128, 128, 128)  # Color del fondo de la ventana (RGB)
 BLANCO = (249, 247, 195)
 NEGRO = (161, 100, 0)
@@ -16,7 +18,7 @@ class Tablero:
     def __init__(self, figuras_b, figuras_n):
         # --- Atributos de la Clase ---
 
-        self.situacion = list (Nada() for x in range (64))
+        self.situacion = list (Nada for x in range (64))
         self.reset ( figuras_b, figuras_n )
         
     def __getitem__(self, indice):
@@ -75,36 +77,39 @@ class Tablero:
             self.situacion[x+56].setPos_y (7)    
 
     def modificar ( self, figura, x, y):
-        self.situacion[x + 8 * y] = figura
-        self.situacion[x + 8 * y].setPos_x = x
-        self.situacion[x + 8 * y].setPos_y = y
-        print(self.situacion[x + 8 * y].getTipo())   
+        casilla = x + 8 * y
+        self.situacion[casilla] = figura
+        self.situacion[casilla].setPos_x( x )
+        self.situacion[casilla].setPos_y( y )
 
 class Pieza:
     def __init__(self, color, fichero_imagen ):
         self.color = color
-        pos_x = -1
-        pos_y = -1
-
+        self.pos_x = -1
+        self.pos_y = -1
+        self.tipo = None
+        self.mov_pos = ()
+        self.verif_obst = False
+        
         # Imagen de la pieza
         if fichero_imagen != "":
             self.imagen = pygame.image.load( fichero_imagen ).convert_alpha()
 
         # Dimensiones de la pieza
         if fichero_imagen != "":
-            self.ancho, self.alto = self.imagen.get_size()
+            self.ancho, self.alto = (LADO_CASILLA, LADO_CASILLA)
     
     def getColor(self):
         return self.color
 
-    def getSelected(self):
-        return self.selected
+    def getAncho(self):
+        return self.ancho
 
-    def getDestino(self):
-        return self.destino
+    def getAlto(self):
+        return self.alto
 
-    def setSelected(self, seleccionado):
-        self.selected = seleccionado
+    def setDimensiones(self, medidas):
+        self.ancho, self.alto = medidas
         
     def setPos_x(self, x):
         self.pos_x = x
@@ -112,8 +117,48 @@ class Pieza:
     def setPos_y(self, y):
         self.pos_y = y
 
-    def setDestino(self, destino):
-        self.destino = destino
+    def setAncho(self, anchura):
+        self.imagen.ancho = anchura
+
+    def hay_obst (self, situacion, x, y):
+        if x > self.pos_x :
+            sentido_x = 1
+        elif x < self.pos_x :
+            sentido_x = -1
+        else:
+            sentido_x = 0
+        if y > self.pos_y :
+            sentido_y = 1
+        elif y < self.pos_y :
+            sentido_y = -1
+        else:
+            sentido_y = 0
+        i = self.pos_x + sentido_x
+        j = self.pos_y + sentido_y
+        while (i,j) != (x,y) :
+            if situacion[i + 8 * j].getTipo() != Nada :
+                return True
+            i += sentido_x
+            j += sentido_y
+        return False
+
+    def chk_mov( self, situacion, x, y):
+        destinos_posibles = list()
+        for i in self.mov_pos :
+            destinos_posibles.append((self.pos_x + i[0], self.pos_y + i[1]))  
+        for i in destinos_posibles:
+            if i[0] == x and i[1] == y: # si el destino está entre los posibles
+                if i[0] in range(0,8) and i[1] in range(0,8): # verifico q el posible destino esté dentro del tablero
+                    if len(self.verif_obst) != 0:
+                        if self.hay_obst(situacion, x, y) : # si detecto obstaculos en trayectoria
+                            return 4
+                    if situacion[i[0] + 8 * i[1]].getColor() == self.color : # si en destino hay figura del mismo color
+                        return 2
+                    elif situacion[i[0] + 8 * i[1]].getColor() == "t" : # si en destino no hay pieza
+                        return 1
+                    else :  # si en destino hay pieza de color contrario ( se comerá la pieza en destino )
+                        return 3
+        return 9
 
 
 class Nada(Pieza):
@@ -127,6 +172,13 @@ class Nada(Pieza):
 class Torre(Pieza):
     def __init__(self, color, fichero_imagen ):
         super().__init__(color, fichero_imagen )
+        self.mov_pos_gen = range(-7,8)
+        self.mov_pos = []
+        for i in self.mov_pos_gen:
+            if i != 0:
+                self.mov_pos.append([i,0])
+                self.mov_pos.append([0,i])
+        self.verif_obst = True
     
     def getTipo(self):
         return type(self)
@@ -135,15 +187,23 @@ class Torre(Pieza):
 class Caballo(Pieza):
     def __init__(self, color, fichero_imagen ):
         super().__init__(color, fichero_imagen )
+        self.mov_pos = ([1,2],[1,-2],[2,1],[2,-1],[-1,2],[-1,-2],[-2,1],[-2,-1])
+        self.verif_obst = False
     
     def getTipo(self):
         return type(self)
 
 
-
 class Alfil(Pieza):
     def __init__(self, color, fichero_imagen):
         super().__init__(color, fichero_imagen)
+        self.mov_pos_gen = range(-7,8)
+        self.mov_pos = []
+        for i in self.mov_pos_gen:
+            if i != 0:
+                self.mov_pos.append([i,i])
+                self.mov_pos.append([i,-1 * i])
+        self.verif_obst = True
     
     def getTipo(self):
         return type(self)
@@ -151,7 +211,9 @@ class Alfil(Pieza):
 
 class Rey(Pieza):
     def __init__(self, color, fichero_imagen):
-        super().__init__(color, fichero_imagen)
+        super().__init__(color, fichero_imagen)        
+        self.mov_pos = ([1,1],[1,0],[1,-1],[-1,1],[-1,0],[-1,-1],[0,1],[0,-1])
+        self.verif_obst = False
     
     def getTipo(self):
         return type(self)
@@ -160,6 +222,15 @@ class Rey(Pieza):
 class Reina(Pieza):
     def __init__(self, color, fichero_imagen):
         super().__init__(color, fichero_imagen)
+        self.mov_pos_gen = range(-7,8)
+        self.mov_pos = []
+        for i in self.mov_pos_gen:
+            if i != 0:
+                self.mov_pos.append([i,i])
+                self.mov_pos.append([i,-1 * i])
+                self.mov_pos.append([i,0])
+                self.mov_pos.append([0,i])
+        self.verif_obst = True
     
     def getTipo(self):
         return type(self)
@@ -168,6 +239,46 @@ class Reina(Pieza):
 class Peon(Pieza):
     def __init__(self, color, fichero_imagen):
         super().__init__(color, fichero_imagen)
-    
+        self.mov_pos = ([0,1],[0,2],[1,1],[-1,1],[0,-1],[0,-2],[1,-1],[-1,-1])
+
     def getTipo(self):
         return type(self)
+
+    def chk_mov( self, situacion, x, y):
+        destinos_posibles = list()
+        for i in self.mov_pos :
+            if self.color == "b" :
+                if i[1] > 0 :
+                    destinos_posibles.append((self.pos_x + i[0], self.pos_y + i[1]))  
+            else :
+                if i[1] < 0 :
+                    destinos_posibles.append((self.pos_x + i[0], self.pos_y + i[1]))  
+        for i in destinos_posibles:
+            if i[0] == x and i[1] == y: # si el destino está entre los posibles
+                if i[0] in range(0,8) and i[1] in range(0,8): # verifico q el posible destino esté dentro del tablero
+                    if ( self.pos_x != x ):     # si el movimiento es diagonal
+                        if situacion[i[0] + 8 * i[1]].getColor() == self.color : # si en destino hay figura del mismo color
+                            return 2
+                        elif situacion[i[0] + 8 * i[1]].getColor() == "t" : # si en destino no hay pieza
+                            return 9
+                        else :  # si en destino hay pieza de color contrario ( se comerá la pieza en destino )
+                            return 3
+                    else :      # si el movimiento es vertical
+                        if abs ( i[1] - self.pos_y ) == 2: # si el movimiento es doble
+                            if self.color == "b" and self.pos_y == 1 : # si el movimiento doble es desde posicion inicial
+                                if ( situacion[i[0] + 8 * ( i[1] - 1 )].getColor() != "t"):
+                                    return 4                                
+                            elif self.color == "n" and self.pos_y == 6 : # si el movimientodoble  es desde posicion inicial
+                                if ( situacion[i[0] + 8 * ( i[1] + 1 )].getColor() != "t"):
+                                    return 4
+                            else: # si el movimiento doble NO es desde posicion inicial
+                                return 9
+                        if situacion[i[0] + 8 * i[1]].getColor() == self.color : # si en destino hay figura del mismo color
+                            return 2
+                        elif situacion[i[0] + 8 * i[1]].getColor() == "t" : # si en destino no hay pieza
+                            return 1
+                        else :  # si en destino hay pieza de color contrario ( movimiento no valido )
+                            return 9                        
+        return 9
+
+
