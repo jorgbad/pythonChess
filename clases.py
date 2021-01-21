@@ -149,7 +149,7 @@ class Pieza:
         for i in destinos_posibles:
             if i[0] == x and i[1] == y: # si el destino está entre los posibles
                 if i[0] in range(0,8) and i[1] in range(0,8): # verifico q el posible destino esté dentro del tablero
-                    if len(self.verif_obst) != 0:
+                    if self.verif_obst:
                         if self.hay_obst(situacion, x, y) : # si detecto obstaculos en trayectoria
                             return 4
                     if situacion[i[0] + 8 * i[1]].getColor() == self.color : # si en destino hay figura del mismo color
