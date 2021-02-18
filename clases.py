@@ -1,5 +1,5 @@
 import pygame
-import random
+#import random
 from pygame.locals import *
 
 
@@ -13,6 +13,116 @@ PASO_ATPC = 5
 FONDO = (128, 128, 128)  # Color del fondo de la ventana (RGB)
 BLANCO = (249, 247, 195)
 NEGRO = (161, 100, 0)
+FONDO_DATOS = (0,0,255)
+FUENTE = 'freesansbold.ttf'
+TAM_FUENTE = 20
+DIM_VENTANA_GANADO = (400,225)
+
+class Partida:
+    def __init__(self, nombre_b, nombre_n):
+        self.jugador_b = Jugador(nombre_b,"b")
+        self.jugador_n = Jugador(nombre_n,"n")
+
+        self.figuras_b = list(Nada for x in range (16))
+        self.figuras_b[0] = Torre("b","ajedrez/img/torre_b.png")
+        self.figuras_b[1] = Caballo("b","ajedrez/img/caballo_b.png")
+        self.figuras_b[2] = Alfil("b","ajedrez/img/alfil_b.png")
+        self.figuras_b[3] = Rey("b","ajedrez/img/rey_b.png")
+        self.figuras_b[4] = Reina("b","ajedrez/img/reina_b.png")
+        self.figuras_b[5] = Alfil("b","ajedrez/img/alfil_b.png")
+        self.figuras_b[6] = Caballo("b","ajedrez/img/caballo_b.png")
+        self.figuras_b[7] = Torre("b","ajedrez/img/torre_b.png")
+        self.figuras_b[8] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[9] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[10] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[11] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[12] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[13] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[14] = Peon("b","ajedrez/img/peon_b.png")
+        self.figuras_b[15] = Peon("b","ajedrez/img/peon_b.png")
+
+        self.figuras_n = list(Nada for x in range (16))
+        self.figuras_n[0] = Torre("n","ajedrez/img/torre_n.png")
+        self.figuras_n[1] = Caballo("n","ajedrez/img/caballo_n.png")
+        self.figuras_n[2] = Alfil("n","ajedrez/img/alfil_n.png")
+        self.figuras_n[3] = Rey("n","ajedrez/img/rey_n.png")
+        self.figuras_n[4] = Reina("n","ajedrez/img/reina_n.png")
+        self.figuras_n[5] = Alfil("n","ajedrez/img/alfil_n.png")
+        self.figuras_n[6] = Caballo("n","ajedrez/img/caballo_n.png")
+        self.figuras_n[7] = Torre("n","ajedrez/img/torre_n.png")
+        self.figuras_n[8] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[9] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[10] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[11] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[12] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[13] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[14] = Peon("n","ajedrez/img/peon_n.png")
+        self.figuras_n[15] = Peon("n","ajedrez/img/peon_n.png")
+
+        self.situacion = Tablero(self.figuras_b, self.figuras_n)
+    
+    def __getitem__(self, indice):
+        return self.situacion[indice]
+    
+    def pintar_datos(self, lienzo):
+        pygame.draw.rect(lienzo, FONDO_DATOS, (FIN_TABLERO + INICIO_TABLERO, 0 , VENTANA_HORI - FIN_TABLERO - INICIO_TABLERO , VENTANA_VERT))
+        fuente = pygame.font.Font(FUENTE, TAM_FUENTE)
+        lbl_blancas = fuente.render(self.jugador_b.nombre, True,BLANCO, FONDO)
+        lbl_negras = fuente.render(self.jugador_n.nombre, True, NEGRO, FONDO)
+        if self.jugador_b.turno:
+            pygame.draw.rect(lienzo, NEGRO, (FIN_TABLERO + INICIO_TABLERO + 5, 20 , 190 , TAM_FUENTE + 10), BORDE)
+        else:
+            pygame.draw.rect(lienzo, NEGRO, (FIN_TABLERO + INICIO_TABLERO + 5, 120 , 190 , TAM_FUENTE + 10), BORDE)
+        lienzo.blit ( lbl_blancas, (FIN_TABLERO + INICIO_TABLERO + 15,25))
+        lienzo.blit ( lbl_negras, (FIN_TABLERO + INICIO_TABLERO + 15,125))
+
+    def cambia_turno ( self ):
+        aux = self.jugador_n.turno
+        self.jugador_n.turno = self.jugador_b.turno
+        self.jugador_b.turno = aux
+    
+    def ganado( self, color_ganador):
+        ventana_ganador = pygame.display.set_mode(DIM_VENTANA_GANADO)    
+        clock = pygame.time.Clock()
+
+        pygame.display.set_caption("Ajedrez")
+
+        ventana_ganador.fill(FONDO)
+
+        fuente = pygame.font.Font(FUENTE, TAM_FUENTE)
+        
+        if color_ganador == self.jugador_b.color:
+            nombre_ganador = self.jugador_b.nombre
+        else:
+            nombre_ganador = self.jugador_n.nombre
+
+        lbl_ganador = fuente.render(nombre_ganador, True, NEGRO, FONDO)
+        lbl_texto = fuente.render("ha ganado la partida", True, NEGRO, FONDO)
+
+        esperando = True
+        while esperando:
+            ventana_ganador.blit ( lbl_ganador, (50,25))
+            ventana_ganador.blit ( lbl_texto, (50,50))
+            pygame.display.flip()
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    esperando = False  
+
+
+class Jugador:
+    def __init__(self, nombre, color):
+        self.color = color
+        if color == "b":
+            self.turno = True
+        elif color == "n":
+            self.turno = False
+        else:
+            print ("Error con el color del jugador")
+
+        self.nombre = nombre
+
+    def __getitem__(self):
+        return self
 
 class Tablero:
     def __init__(self, figuras_b, figuras_n):
@@ -91,6 +201,7 @@ class Pieza:
         self.mov_pos = ()
         self.verif_obst = False
         
+
         # Imagen de la pieza
         if fichero_imagen != "":
             self.imagen = pygame.image.load( fichero_imagen ).convert_alpha()
@@ -133,6 +244,7 @@ class Pieza:
             sentido_y = -1
         else:
             sentido_y = 0
+        
         i = self.pos_x + sentido_x
         j = self.pos_y + sentido_y
         while (i,j) != (x,y) :
@@ -149,8 +261,9 @@ class Pieza:
         for i in destinos_posibles:
             if i[0] == x and i[1] == y: # si el destino está entre los posibles
                 if i[0] in range(0,8) and i[1] in range(0,8): # verifico q el posible destino esté dentro del tablero
-                    if self.verif_obst:
-                        if self.hay_obst(situacion, x, y) : # si detecto obstaculos en trayectoria
+                    if self.verif_obst :
+                        if self.hay_obst(situacion, x, y) :
+                            print("Hay obstaculos")
                             return 4
                     if situacion[i[0] + 8 * i[1]].getColor() == self.color : # si en destino hay figura del mismo color
                         return 2
@@ -159,7 +272,7 @@ class Pieza:
                     else :  # si en destino hay pieza de color contrario ( se comerá la pieza en destino )
                         return 3
         return 9
-
+        
 
 class Nada(Pieza):
     def __init__(self):        
